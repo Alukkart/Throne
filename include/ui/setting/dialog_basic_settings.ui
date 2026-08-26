@@ -693,14 +693,21 @@ QTabBar::tab:hover:!selected {
               </property>
              </widget>
             </item>
-            <item row="1" column="0">
-             <widget class="QCheckBox" name="enable_custom_icon">
-              <property name="text">
-               <string>Enable Custom Icons</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
+             <item row="1" column="0">
+              <widget class="QCheckBox" name="enable_custom_icon">
+               <property name="text">
+                <string>Enable Custom Icons</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QCheckBox" name="custom_icon_in_dock">
+               <property name="text">
+                <string>Use Custom Icon in Dock</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
           </widget>
          </item>
          <item>

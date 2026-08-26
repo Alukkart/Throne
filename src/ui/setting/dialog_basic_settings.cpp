@@ -152,6 +152,7 @@ DialogBasicSettings::DialogBasicSettings(QWidget *parent)
     // feiyangqingyun custom stylesheet themes (ported from upstream nekoray)
     ui->theme->addItems({"FlatGray", "LightBlue", "SoftPink", "BlackSoft"});
     ui->enable_custom_icon->setChecked(Configs::dataManager->settingsRepo->use_custom_icons);
+    ui->custom_icon_in_dock->setChecked(Configs::dataManager->settingsRepo->custom_icon_in_dock);
     connect(ui->select_custom_icon, &QPushButton::clicked, this, [=, this] {
         auto n = QMessageBox::information(this, "Custom Icon Manual", tr(Configs::Information::CustomIconManual.toStdString().c_str()), QMessageBox::Open | QMessageBox::Cancel);
         if (n == QMessageBox::Open) {
@@ -394,6 +395,9 @@ void DialogBasicSettings::accept() {
     auto oldUseCustomIcon = Configs::dataManager->settingsRepo->use_custom_icons;
     Configs::dataManager->settingsRepo->use_custom_icons = ui->enable_custom_icon->isChecked();
     if (oldUseCustomIcon != Configs::dataManager->settingsRepo->use_custom_icons) CACHE.updateTrayIcon = true;
+    auto oldCustomIconInDock = Configs::dataManager->settingsRepo->custom_icon_in_dock;
+    Configs::dataManager->settingsRepo->custom_icon_in_dock = ui->custom_icon_in_dock->isChecked();
+    if (oldCustomIconInDock != Configs::dataManager->settingsRepo->custom_icon_in_dock) CACHE.updateTrayIcon = true;
     D_SAVE_BOOL(start_minimal)
     Configs::dataManager->settingsRepo->skip_delete_confirmation = ui->skip_delete_confirm->isChecked();
     bool profileListDisplayChanged =
