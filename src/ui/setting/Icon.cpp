@@ -5,6 +5,11 @@
 #include <QPainter>
 
 
+QPixmap Icon::GetBrandIcon() {
+    // Always the bundled icon, never the custom /icons/*.png.
+    return QPixmap(QString(":/Throne/") + "Throne" + ".png");
+}
+
 QPixmap Icon::GetTrayIcon(TrayIconStatus status) {
     QPixmap pixmap;
     QPixmap pixmap_read;

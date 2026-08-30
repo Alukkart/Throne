@@ -705,10 +705,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     // Setup Tray
     tray = new QSystemTrayIcon(nullptr);
     tray->setIcon(GetTrayIcon(Icon::NONE));
-    if (Configs::dataManager->settingsRepo->custom_icon_in_dock)
-        QApplication::setWindowIcon(Icon::GetTrayIcon(Icon::NONE));
-    else
-        QApplication::setWindowIcon(Icon::GetTrayIcon(Icon::RUNNING));
+    const bool keepBrand =
+        Configs::dataManager->settingsRepo->use_custom_icons &&
+        !Configs::dataManager->settingsRepo->follow_status_in_taskbar;
+    QApplication::setWindowIcon(keepBrand ? Icon::GetBrandIcon()
+                                          : Icon::GetTrayIcon(Icon::NONE));
     trayMenu = new QMenu();
     trayMenu->addAction(ui->actionShow_window);
     trayMenu->addSeparator();

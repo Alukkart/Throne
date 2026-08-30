@@ -14,4 +14,7 @@ namespace Icon {
     };
 
     QPixmap GetTrayIcon(TrayIconStatus status);
+
+    // Loads the bundled brand icon directly, bypassing any custom icon lookup.
+    QPixmap GetBrandIcon();
 } // namespace Icon

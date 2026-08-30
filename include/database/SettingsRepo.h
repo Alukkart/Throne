@@ -122,7 +122,7 @@ namespace Configs {
         bool allow_beta_update = false;
         bool show_system_dns = false;
         bool use_custom_icons = false;
-        bool custom_icon_in_dock = false;
+        bool follow_status_in_taskbar = true;
         bool skip_delete_confirmation = false;
         // Fold each config's security into the proxy table's Type column.
         bool show_config_security = false;
