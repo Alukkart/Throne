@@ -17,7 +17,7 @@
 #include "include/ui/profile/edit_custom.h"
 #include "include/ui/profile/edit_extra_core.h"
 
-#include "3rdparty/qv2ray/v2/ui/widgets/editors/w_JsonEditor.hpp"
+#include "include/ui/widget/json/JsonEditorDialog.h"
 #include "include/global/GuiUtils.hpp"
 #include "include/global/Utils.hpp"
 
@@ -114,10 +114,8 @@ void DialogEditProfile::toggleXrayWidgets(bool show) {
 
 DialogEditProfile::DialogEditProfile(const QString &_type, int profileOrGroupId, QWidget *parent)
     : QDialog(parent), ui(new Ui::DialogEditProfile) {
-    // setup UI
     ui->setupUi(this);
 
-    // Save current tab order and the insertion point for innerWidget
     outerTabOrder = collectTabOrder(this, nullptr, ui->fake);
     innerTabOrderIndex = outerTabOrder.indexOf(ui->fake);
     if (innerTabOrderIndex >= 0) outerTabOrder.removeAt(innerTabOrderIndex);
@@ -135,7 +133,6 @@ DialogEditProfile::DialogEditProfile(const QString &_type, int profileOrGroupId,
     ui->verticalLayout_5->setAlignment(Qt::AlignTop);
     ui->verticalLayout_8->setAlignment(Qt::AlignTop);
 
-    // Xray init
     ui->xray_security->addItems({"", "tls", "reality"});
     ui->xray_network->addItems(Configs::XrayNetworks);
     ui->xray_fp->addItems(Configs::tlsFingerprints);
@@ -143,7 +140,6 @@ DialogEditProfile::DialogEditProfile(const QString &_type, int profileOrGroupId,
     ui->xray_ed_length->setValidator(new QIntValidator(0, 8192));
     toggleXrayWidgets(false);
 
-    // network changed
     network_title_base = ui->network_box->title();
     connect(ui->network, &QComboBox::currentTextChanged, this, [=,this](const QString &txt) {
         ui->network_box->setTitle(network_title_base.arg(txt));
@@ -212,7 +208,6 @@ DialogEditProfile::DialogEditProfile(const QString &_type, int profileOrGroupId,
     });
     ui->network->removeItem(0);
 
-    // security changed
     connect(ui->security, &QComboBox::currentTextChanged, this, [=,this](const QString &txt) {
         if (txt == "tls") {
             ui->security_box->setVisible(true);
@@ -225,14 +220,12 @@ DialogEditProfile::DialogEditProfile(const QString &_type, int profileOrGroupId,
     });
     emit ui->security->currentTextChanged(ui->security->currentText());
 
-    // for fragment: fallback delay only applies to the built-in implementation,
-    // so disable it when the tri-state is Off (index 2).
+    // Fragment index 2 is Off; the fallback delay only exists in the built-in implementation.
     connect(ui->fragment, &QComboBox::currentIndexChanged, this, [=,this](int index)
     {
         ui->tls_frag_fall_delay->setEnabled(index != 2);
     });
 
-    // mux setting changed
     connect(ui->multiplex, &QComboBox::currentTextChanged, this, [=,this](const QString &txt) {
         if (txt == "Off") {
             ui->brutal_enable->setCheckState(Qt::CheckState::Unchecked);
@@ -242,13 +235,11 @@ DialogEditProfile::DialogEditProfile(const QString &_type, int profileOrGroupId,
         }
     });
 
-    // Advanced options
     connect(ui->advanced_button, &QPushButton::clicked, this, [=,this]() {
         auto advancedWidget = new EditAdvanced(this, ent);
         advancedWidget->show();
     });
 
-    // Xray
     connect(ui->xray_mode, &QComboBox::currentTextChanged, this, [=,this](const QString &) {
         updateXrayXHTTPControls();
         queueRefreshDialogLayout();
@@ -320,7 +311,6 @@ DialogEditProfile::DialogEditProfile(const QString &_type, int profileOrGroupId,
         this->groupId = profileOrGroupId;
         this->type = _type;
 
-        // load type to combo box
         LOAD_TYPE("autoselector")
         LOAD_TYPE("socks")
         LOAD_TYPE("http")
@@ -351,7 +341,6 @@ DialogEditProfile::DialogEditProfile(const QString &_type, int profileOrGroupId,
         ui->type->addItem(tr("Extra Core"), "extracore");
         LOAD_TYPE("chain")
 
-        // type changed
         connect(ui->type, &QComboBox::currentIndexChanged, this, [=,this](int index) {
             typeSelected(ui->type->itemData(index).toString());
         });
@@ -431,6 +420,13 @@ void DialogEditProfile::typeSelected(const QString &newType) {
                 _innerWidget->_protocol_version->currentText(),
                 _innerWidget->_obfuscation_type->currentText()
             );
+            // A realm profile is reached through the rendezvous service, not an address of its own.
+            const auto realm = _innerWidget->_realm_enabled->isChecked()
+                               && _innerWidget->_protocol_version->currentText() == "2";
+            ui->address->setEnabled(!realm);
+            ui->address_l->setEnabled(!realm);
+            ui->port->setEnabled(!realm);
+            ui->port_l->setEnabled(!realm);
             queueRefreshDialogLayout();
         };
 
@@ -439,6 +435,10 @@ void DialogEditProfile::typeSelected(const QString &newType) {
             updateLayout();
         });
         connect(_innerWidget->_obfuscation_type, &QComboBox::currentTextChanged, _innerWidget, [=](const QString &)
+        {
+            updateLayout();
+        });
+        connect(_innerWidget->_realm_enabled, &QCheckBox::toggled, _innerWidget, [=](bool)
         {
             updateLayout();
         });
@@ -526,7 +526,6 @@ void DialogEditProfile::typeSelected(const QString &newType) {
         this->ent->gid = groupId;
     }
 
-    // hide some widget
     auto showAddressPort = type != "chain"
                            && type != "autoselector"
                            && type != "direct"
@@ -539,6 +538,14 @@ void DialogEditProfile::typeSelected(const QString &newType) {
     ui->address_l->setVisible(showAddressPort);
     ui->port->setVisible(showAddressPort);
     ui->port_l->setVisible(showAddressPort);
+
+    // A realm carries the endpoint itself; set unconditionally, since switching away must re-enable these.
+    auto hysteria = ent->Hysteria();
+    const bool realmAddress = hysteria != nullptr && hysteria->RealmActive();
+    ui->address->setEnabled(!realmAddress);
+    ui->address_l->setEnabled(!realmAddress);
+    ui->port->setEnabled(!realmAddress);
+    ui->port_l->setEnabled(!realmAddress);
 
     auto showAdvancedDialOption = type != "chain"
     && type != "autoselector"
@@ -654,7 +661,6 @@ void DialogEditProfile::typeSelected(const QString &newType) {
         ui->brutal_u_speed->setText(Int2String(mux->brutal->up_mbps));
     }
 
-    // 左边 bean
     auto old = ui->bean->layout()->itemAt(0)->widget();
     ui->bean->layout()->removeWidget(old);
     innerWidget->layout()->setContentsMargins(0, 0, 0, 0);
@@ -662,7 +668,6 @@ void DialogEditProfile::typeSelected(const QString &newType) {
     ui->bean->setTitle(ent->outbound->DisplayType());
     delete old;
 
-    // Update tab order to include innerWidget
     const auto innerTabOrder = collectTabOrder(this, innerWidget);
     if (!innerTabOrder.isEmpty() && innerTabOrderIndex >= 0 && innerTabOrderIndex <= outerTabOrder.size()) {
         auto completeTabOrder = outerTabOrder.mid(0, innerTabOrderIndex);
@@ -671,7 +676,6 @@ void DialogEditProfile::typeSelected(const QString &newType) {
         rebuildTabOrder(completeTabOrder);
     }
 
-    // 左边 bean inner editor
     innerEditor->get_edit_dialog = [&]() { return static_cast<QWidget*>(this); };
     innerEditor->get_edit_text_name = [&]() { return ui->name->text(); };
     innerEditor->get_edit_text_serverAddress = [&]() { return ui->address->text(); };
@@ -681,13 +685,11 @@ void DialogEditProfile::typeSelected(const QString &newType) {
     innerEditor->editor_cache_updated = [=,this] { editor_cache_updated_impl(); };
     innerEditor->onStart(ent);
 
-    // 左边 common
     ui->name->setText(ent->outbound->name);
     ui->address->setText(ent->outbound->GetAddress());
     ui->port->setText(ent->outbound->GetPort());
     ui->port->setValidator(QRegExpValidator_Number);
 
-    // 星号
     ADD_ASTERISK(this)
     if (ent->outbound->HasTransport()) {
         ui->network_l->setVisible(true);
@@ -771,7 +773,6 @@ bool DialogEditProfile::validateHeaders() {
 }
 
 bool DialogEditProfile::onEnd() {
-    // bean
     if (!innerEditor->onEnd()) {
         return false;
     }
@@ -895,12 +896,10 @@ bool DialogEditProfile::onEnd() {
 }
 
 void DialogEditProfile::accept() {
-    // save to ent
     if (!onEnd()) {
         return;
     }
 
-    // finish
     QStringList args;
 
     if (newEnt) {
@@ -917,8 +916,6 @@ void DialogEditProfile::accept() {
     QDialog::accept();
 }
 
-// cached editor (dialog)
-
 void DialogEditProfile::editor_cache_updated_impl() {
     if (CACHE.certificate.isEmpty()) {
         ui->certificate_edit->setText(tr("Not set"));
@@ -928,7 +925,6 @@ void DialogEditProfile::editor_cache_updated_impl() {
     if (ent->outbound->IsXray()) {
         ui->xray_downloadsettings_edit->setText(CACHE.XrayDownloadSettings.isEmpty() ? "Not Set" : "Already Set");
     }
-    // CACHE macro
     for (auto a: innerEditor->get_editor_cached()) {
         if (a.second.isEmpty()) {
             a.first->setText(tr("Not set"));
@@ -948,7 +944,7 @@ void DialogEditProfile::on_certificate_edit_clicked() {
 }
 
 void DialogEditProfile::on_xray_downloadsettings_edit_clicked() {
-    auto editor = new JsonEditor(QString2QJsonObject(CACHE.XrayDownloadSettings), this);
+    auto editor = new JsonEdit::JsonEditorDialog(QString2QJsonObject(CACHE.XrayDownloadSettings), this);
     auto result = editor->OpenEditor();
     if (!result.isEmpty()) CACHE.XrayDownloadSettings = QJsonObject2QString(result, true);
     else CACHE.XrayDownloadSettings.clear();

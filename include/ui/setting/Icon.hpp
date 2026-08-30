@@ -15,6 +15,5 @@ namespace Icon {
 
     QPixmap GetTrayIcon(TrayIconStatus status);
 
-    // Same as GetTrayIcon, unless the taskbar is pinned to the bundled brand icon.
     QPixmap GetTaskbarIcon(TrayIconStatus status);
-} // namespace Icon
+}

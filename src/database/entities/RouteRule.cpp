@@ -65,6 +65,8 @@ namespace Configs {
         no_drop = other.no_drop;
         override_address = other.override_address;
         override_port = other.override_port;
+        tls_spoof = other.tls_spoof;
+        tls_spoof_method = other.tls_spoof_method;
         sniffers << other.sniffers;
         sniffOverrideDest = other.sniffOverrideDest;
         strategy = other.strategy;
@@ -119,7 +121,6 @@ namespace Configs {
             else
                 obj["rule_set"] = get_as_array(rule_set, false, get_rule_set_name);
         if (invert) obj["invert"] = invert;
-        // fix action type
         if (action == "route")
         {
             if (outboundID == -3) action = "reject";
@@ -136,6 +137,12 @@ namespace Configs {
         {
             if (!override_address.isEmpty()) obj["override_address"] = override_address;
             if (override_port.toInt() > 0) obj["override_port"] = override_port.toInt();
+            if (!tls_spoof.isEmpty())
+            {
+                obj["tls_spoof"] = tls_spoof;
+                // the method only qualifies a spoof, the core rejects it standalone
+                if (!tls_spoof_method.isEmpty()) obj["tls_spoof_method"] = tls_spoof_method;
+            }
 
             if (action == "route" || action == "bypass")
             {
@@ -183,9 +190,7 @@ namespace Configs {
                 {"outbound", outboundID},
             };
         }
-        // Faithful, portable representation of a single rule for sharing: the sing-box
-        // fields with outbound as a portable string (no adblock injection), plus our own
-        // name + type token so simple/advanced rules round-trip.
+        // forView=true renders outbound as a portable string and skips the adblock injection.
         QJsonObject obj = get_rule_json(true);
         if (obj.isEmpty()) return obj; // outbound profile missing; caller skips it
         obj["name"] = name;
@@ -222,6 +227,7 @@ namespace Configs {
                 if (attr == QStringLiteral("override_address")) return rule.override_address.isEmpty();
                 if (attr == QStringLiteral("override_port"))
                     return rule.override_port.isEmpty() || rule.override_port.trimmed().isEmpty() || rule.override_port.toInt() <= 0;
+                if (attr == QStringLiteral("tls_spoof")) return rule.tls_spoof.isEmpty();
                 return !isValidStrArray(rule.get_current_value_string(attr));
         }
         return true;
@@ -256,6 +262,8 @@ namespace Configs {
         else if (attr == QStringLiteral("no_drop")) no_drop = false;
         else if (attr == QStringLiteral("override_address")) override_address.clear();
         else if (attr == QStringLiteral("override_port")) override_port.clear();
+        else if (attr == QStringLiteral("tls_spoof")) tls_spoof.clear();
+        else if (attr == QStringLiteral("tls_spoof_method")) tls_spoof_method.clear();
         else if (attr == QStringLiteral("override_destination")) sniffOverrideDest = false;
         else if (attr == QStringLiteral("strategy")) strategy.clear();
     }
@@ -298,6 +306,8 @@ namespace Configs {
             "outbound",
             "override_address",
             "override_port",
+            "tls_spoof",
+            "tls_spoof_method",
             "method",
             "no_drop",
             "override_destination",
@@ -320,6 +330,7 @@ namespace Configs {
             fieldName == "action" ||
             fieldName == "method" ||
             fieldName == "strategy" ||
+            fieldName == "tls_spoof_method" ||
             fieldName == "outbound") return select;
 
         return text;
@@ -355,6 +366,10 @@ namespace Configs {
             resp.prepend("");
             return resp;
         }
+        if (fieldName == "tls_spoof_method")
+        {
+            return {"", "wrong-sequence", "wrong-checksum", "wrong-ack", "wrong-md5", "wrong-timestamp"};
+        }
         return {};
     }
 
@@ -387,6 +402,14 @@ namespace Configs {
         if (fieldName == "override_port")
         {
             return {override_port};
+        }
+        if (fieldName == "tls_spoof")
+        {
+            return {tls_spoof};
+        }
+        if (fieldName == "tls_spoof_method")
+        {
+            return {tls_spoof_method};
         }
         if (fieldName == "outbound")
         {
@@ -532,6 +555,14 @@ namespace Configs {
         if (fieldName == "override_port")
         {
             override_port = value[0];
+        }
+        if (fieldName == "tls_spoof")
+        {
+            tls_spoof = value[0];
+        }
+        if (fieldName == "tls_spoof_method")
+        {
+            tls_spoof_method = value[0];
         }
         if (fieldName == "override_destination")
         {
