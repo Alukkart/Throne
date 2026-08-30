@@ -705,11 +705,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     // Setup Tray
     tray = new QSystemTrayIcon(nullptr);
     tray->setIcon(GetTrayIcon(Icon::NONE));
-    const bool keepBrand =
-        Configs::dataManager->settingsRepo->use_custom_icons &&
-        !Configs::dataManager->settingsRepo->follow_status_in_taskbar;
-    QApplication::setWindowIcon(keepBrand ? Icon::GetBrandIcon()
-                                          : Icon::GetTrayIcon(Icon::NONE));
+    QApplication::setWindowIcon(Icon::GetTaskbarIcon(Icon::NONE));
     trayMenu = new QMenu();
     trayMenu->addAction(ui->actionShow_window);
     trayMenu->addSeparator();

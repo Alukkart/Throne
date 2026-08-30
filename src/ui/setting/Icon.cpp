@@ -5,11 +5,6 @@
 #include <QPainter>
 
 
-QPixmap Icon::GetBrandIcon() {
-    // Always the bundled icon, never the custom /icons/*.png.
-    return QPixmap(QString(":/Throne/") + "Throne" + ".png");
-}
-
 QPixmap Icon::GetTrayIcon(TrayIconStatus status) {
     QPixmap pixmap;
     QPixmap pixmap_read;
@@ -81,4 +76,13 @@ QPixmap Icon::GetTrayIcon(TrayIconStatus status) {
     }
 
     return pixmap;
+}
+
+QPixmap Icon::GetTaskbarIcon(TrayIconStatus status) {
+    const auto &settings = Configs::dataManager->settingsRepo;
+    // The bundled icon only: a custom PNG has no room for the padding macOS adds in the dock.
+    if (settings->use_custom_icons && !settings->follow_status_in_taskbar) {
+        return QPixmap(QString(":/Throne/") + "Throne" + ".png");
+    }
+    return GetTrayIcon(status);
 }

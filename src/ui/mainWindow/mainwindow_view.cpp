@@ -204,12 +204,7 @@ void MainWindow::refresh_status(const QString &traffic_update) {
 
     // refresh title & window icon
     setWindowTitle(make_title(false));
-    if (icon_status_new != icon_status) {
-        const bool keepBrand =
-            settings->use_custom_icons && !settings->follow_status_in_taskbar;
-        QApplication::setWindowIcon(keepBrand ? Icon::GetBrandIcon()
-                                              : GetTrayIcon(icon_status_new));
-    }
+    if (icon_status_new != icon_status) QApplication::setWindowIcon(GetTaskbarIcon(icon_status_new));
 
     // refresh tray
     if (tray != nullptr) {
